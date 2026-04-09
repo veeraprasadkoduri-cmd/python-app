@@ -1,0 +1,77 @@
+<script>
+// ─── CHANGE THIS to your server IP if deploying to EC2 ───
+const BASE_URL = 'http://localhost:5000';
+// Example EC2: const BASE_URL = 'http://13.233.XX.XX:5000';
+
+let authToken = localStorage.getItem('jn_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('jn_user') || 'null');
+
+function apiHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    ...(authToken ? { 'Authorization': 'Bearer ' + authToken } : {})
+  };
+}
+
+async function apiFetch(path, opts = {}) {
+  try {
+    const res = await fetch(BASE_URL + path, { ...opts, headers: apiHeaders() });
+    const data = await res.json();
+    return { ok: res.ok, data };
+  } catch(e) {
+    return { ok: false, data: { error: 'Cannot reach backend. Is Flask running?' } };
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const { ok, data } = await apiFetch('/login', {
+    method: 'POST', body: JSON.stringify({ email, password })
+  });
+  if (ok) {
+    authToken = data.token;
+    currentUser = data.user;
+    localStorage.setItem('jn_token', authToken);
+    localStorage.setItem('jn_user', JSON.stringify(currentUser));
+    showToast('Welcome, ' + currentUser.name + '!');
+    document.getElementById('user-name').textContent = currentUser.name;
+  } else {
+    showToast(data.error || 'Login failed');
+  }
+}
+
+async function doSignup() {
+  const { ok, data } = await apiFetch('/signup', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: document.getElementById('signup-name').value.trim(),
+      email: document.getElementById('signup-email').value.trim(),
+      password: document.getElementById('signup-password').value,
+      skills: document.getElementById('signup-skills').value.trim(),
+      location: document.getElementById('signup-location').value.trim()
+    })
+  });
+  showToast(ok ? 'Account created! Please log in.' : (data.error || 'Signup failed'));
+}
+
+async function loadJobs() {
+  if (!authToken) return;
+  const { ok, data } = await apiFetch('/jobs');
+  if (!ok || !data.jobs) return;
+  const container = document.getElementById('live-jobs-list');
+  if (!container) return;
+  container.innerHTML = data.jobs.map(j => `
+    <div class="job-item">
+      <div class="company-logo">${j.company.slice(0,2).toUpperCase()}</div>
+      <div class="job-info">
+        <div class="job-title-text">${j.title}</div>
+        <div class="job-meta"><span>${j.company}</span><span>${j.location}</span></div>
+        <div style="font-size:12px;color:var(--text3)">${j.skills_required}</div>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-sm btn-primary" onclick="openApplyModal('${j.title}','${j.company}')">Apply</button>
+      </div>
+    </div>`).join('');
+}
+</script>

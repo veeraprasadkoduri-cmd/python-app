@@ -65,7 +65,7 @@ pipeline {
             echo "SUCCESS: Pipeline completed."
         }
         failure {
-            echo "FAILED: Check logs above."
+            echo "FAILED: Check lOG above."
         }
         always {
             cleanWs()

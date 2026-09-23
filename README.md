@@ -1,1 +1,1 @@
-# python-app veera
+# python-app

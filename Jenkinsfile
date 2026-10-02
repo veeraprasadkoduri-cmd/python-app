@@ -62,7 +62,7 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: Pipeline completed."
+            echo "SUCCESS: Pipeline, completed."
         }
         failure {
             echo "FAILED: Check lOG above."
